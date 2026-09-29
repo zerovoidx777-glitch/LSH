@@ -1,0 +1,64 @@
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size, Main.Position, Main.BackgroundColor3 = UDim2.new(0, 200, 0, 260), UDim2.new(0.5, -100, 0.4, 0), Color3.fromRGB(30, 30, 30)
+Main.Active, Main.Draggable = true, true
+
+local Title = Instance.new("TextLabel", Main)
+Title.Size, Title.Text, Title.TextColor3, Title.BackgroundColor3 = UDim2.new(1, 0, 0, 30), "LS Hub", Color3.new(1,1,1), Color3.fromRGB(45, 45, 45)
+
+local function createBtn(txt, pos, callback)
+    local btn = Instance.new("TextButton", Main)
+    btn.Size, btn.Position, btn.Text, btn.BackgroundColor3, btn.TextColor3 = UDim2.new(0.9, 0, 0, 35), pos, txt, Color3.fromRGB(60, 60, 60), Color3.new(1,1,1)
+    btn.MouseButton1Click:Connect(function() callback(btn) end)
+    return btn
+end
+
+-- 1. Fly
+local flying, bv, bg = false
+createBtn("Fly: OFF", UDim2.new(0.05, 0, 0.15, 0), function(btn)
+    flying = not flying
+    btn.Text = flying and "Fly: ON" or "Fly: OFF"
+    local hrp = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if flying and hrp then
+        bv, bg = Instance.new("BodyVelocity", hrp), Instance.new("BodyGyro", hrp)
+        bv.MaxForce, bg.MaxTorque = Vector3.new(9e9,9e9,9e9), Vector3.new(9e9,9e9,9e9)
+        task.spawn(function()
+            while flying and hrp do
+                local cam = workspace.CurrentCamera
+                bv.Velocity, bg.CFrame = cam.CFrame.LookVector * (tonumber(game.Players.LocalPlayer.Character.Humanoid.WalkSpeed) or 50), cam.CFrame
+                task.wait()
+            end
+            if bv then bv:Destroy() end if bg then bg:Destroy() end
+        end)
+    end
+end)
+
+-- 2. Noclip
+local noclip = false
+createBtn("Noclip: OFF", UDim2.new(0.05, 0, 0.32, 0), function(btn)
+    noclip = not noclip
+    btn.Text = noclip and "Noclip: ON" or "Noclip: OFF"
+end)
+game:GetService("RunService").Stepped:Connect(function()
+    if noclip and game.Players.LocalPlayer.Character then
+        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+end)
+
+-- 3. Speed Box (1-500)
+local Box = Instance.new("TextBox", Main)
+Box.Size, Box.Position, Box.PlaceholderText, Box.Text = UDim2.new(0.9, 0, 0, 35), UDim2.new(0.05, 0, 0.49, 0), "Speed (1-500)", ""
+Box.BackgroundColor3, Box.TextColor3 = Color3.fromRGB(50, 50, 50), Color3.new(1,1,1)
+Box.FocusLost:Connect(function()
+    local val = math.clamp(tonumber(Box.Text) or 16, 1, 500)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = val
+    Box.Text = "Speed: " .. val
+end)
+
+-- 4. Minimize Button (ปุ่มซ่อน/เปิด UI)
+local ToggleBtn = Instance.new("TextButton", ScreenGui)
+ToggleBtn.Size, ToggleBtn.Position, ToggleBtn.Text = UDim2.new(0, 50, 0, 50), UDim2.new(0.05, 0, 0.2, 0), "LS"
+ToggleBtn.BackgroundColor3, ToggleBtn.TextColor3 = Color3.fromRGB(0, 150, 255), Color3.new(1,1,1)
+ToggleBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
